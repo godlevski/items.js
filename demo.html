@@ -4,10 +4,51 @@
   <meta charset="utf-8">
   <title>Items JS</title>
   <script type="text/javascript" src="items.js"></script>
+  <style>
+  	body{
+  		font-family: 'Courier New', 'Courier', sans-serif;
+  		margin: 0 auto;
+  		width: 960px;
+  		padding-top: 20px;
+  		padding-bottom: 80px;
+  	}
+  	.projection td{
+  		white-space: normal !important;
+  	}
+  </style>
 </head>
 <body>
 
-	<h1>Items.js</h1>
+<h1>Items.js</h1>
+
+<p>You can play with what you see by using:</p>
+<pre><code>
+	// replace '#' with projection number
+	projections[#]
+
+		// pass instance of Items or Items.index 
+		.update()
+
+		// OR 
+		// change .items and/or .index properties
+		
+		// AND
+		// update reflection
+		.reflect()</code></pre>
+
+<p>Also you may be interested to take a look at:</p>
+<pre><code>
+	shelfs
+	categories
+	inventory</code></pre>
+
+<p>Here is an idea (pass it to console):</p>
+<pre><code>
+	categories['default']['New Property Name'] = 'New Property Value';
+	projections[0]
+		.update( inventory.indexate().index.sort() )
+		.reflect();
+	</code></pre>
 
 	<script>
 
@@ -16,16 +57,16 @@
 	var shelfs = new Items(
 
 			{'Shelf Name': 'Fast -n- free',
-			'Shipping Conditions': 'Items will ship the same day',
+			'Shipping': 'Items will ship the same day',
 			'Return policy': 'no returns acepted'},
 
 			{'Shelf Name': 'Regular',
-			'Shipping Conditions': 'Items will ship within 2 business days',
-			'Return policy': 'Returns acepted within 30 business days'},
+			'Shipping': 'Ships within 2 bus. days',
+			'Return policy': 'Returns acepted'},
 
 			{'Shelf Name': 'Special order',
-			'Shipping Conditions': 'Items will ship within 2 weeks',
-			'Return policy': 'Returns acepted within 30 business days'}
+			'Shipping': 'Ship within 2 weeks',
+			'Return policy': 'Returns acepted'}
 
 		),
 
@@ -83,7 +124,7 @@
 				},
 			'Type': 'exception',
 			'Shelf': {
-					'Shelf Name': 'Special shelf for exeptional items'
+					'Shelf Name': 'Special shelf'
 				}
 			}
 
@@ -92,6 +133,7 @@
 		// html tables of our inventory
 		projections = new Items.collection();
 
+	
 	
 	// -- Indexation and projections
 
@@ -109,20 +151,6 @@
 			new Items.projection(inventory),
 			new Items.projection(shelfs)
 		);
-
-	document.getElementsByTagName('body')[0].innerHTML += 
-		'<h2>Basic Reflections</h2>';
-
-	// create reflections
-	for (var i = 0; i < projections.length; i++) {
-
-		projections[i].reflect();
-
-		document.getElementsByTagName('body')[0].appendChild(
-			projections[i].el
-		)
-	};
-
 
 	// second item has more complete specs set,
 	// so lets use it to create more extended index
@@ -142,20 +170,10 @@
 			)
 	);
 
-	document.getElementsByTagName('body')[0].innerHTML += 
-		'<h2>Extended Reflection</h2>';
-
 	// make another projection
 	projections.push(
 			new Items.projection(inventory)
 		);
-
-	// display it
-	document.getElementsByTagName('body')[0].appendChild(
-			projections[2].el
-		)
-
-	projections[2].reflect();
 
 	// but last item is somewhat special as well, 
 	// so lets set indexation mode to 'extended' 
@@ -169,7 +187,7 @@
 			.index
 	);
 
-	// update previously created projection's index and reflect changes
+	// update previously created projection's index
 	projections[2].index
 		.clear()
 		.merge(inventory.index)
@@ -178,13 +196,32 @@
 	projections[2]
 		.reflect();
 
+	// push elements to stage
+	
+	for (var i = 0; i < projections.length; i++) {
+		var title = document.createElement('h3');
+
+		title.innerHTML = 'Projection #'+i;
+
+		document.getElementsByTagName('body')[0].appendChild(
+			title
+		)
+		
+		document.getElementsByTagName('body')[0].appendChild(
+			projections[i].el
+		)
+
+		projections[i].reflect();
+	};
+
+	
 	// we can also do this:
 
-	inventory.toText();
+	//inventory.toText();
 
 	// or this
-	
-	inventory.toFile();
+
+	//inventory.toFile();
 
 	</script>
 

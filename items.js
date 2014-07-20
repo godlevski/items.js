@@ -24,7 +24,7 @@ Items.handies.valuate = function(input, values){
 
 		for (var i = 0; i < variables.length; i++) {
 			var value = values[ variables[i].replace(/\{|\}/g,'') ];
-			input = input.replace(variables[i], value ? value : '');
+			input = input.replace(variables[i], typeof value != 'undefined' ? value : '');
 		};
 	}
 
@@ -875,29 +875,7 @@ Items.projection.prototype.reflect = function(){
 
 	// add default controls styles
 
-	html += '<style>\
-				.controls { overflow: hidden; padding:0px; font-size: 12px; font-family: sans-serif; position: relative} \
-				.controls.hover-slide { margin:0px; height:32px; } \
-				.controls.hover-slide:hover { height: auto !important } \
-				.controls h2 { height:30px; padding-left:10px; padding-right:10px; line-height:30px; font-size: 12px; background-color: #c1c1c1; color: white; margin:0px; } \
-				.controls div { display: block; } \
-				.controls .handle { display: inline-block; float: left; width: 25px; text-align:center; } \
-				.controls label { display: block; padding-left:25px; padding-right:10px; line-height:20px; height:20px; border-bottom: 1px dotted white; } \
-				.controls label[checked=checked] input, \
-				.controls label:not([checked=checked]) input { display: none;} \
-				.controls label[checked=checked] { background-color: #e7e7e7 } \
-				.controls label:not([checked=checked]) { background-color: none } \
-				.controls button { display:block; border: none; border-top: 2px solid #e7e7e7; border-bottom: 2px solid #e7e7e7; height: 30px; outline: none; background-color: #f3f3f3; text-align: left; padding-left:25px; width: 100% } \
-				.controls button:hover { background-color: #f9f9f9; } \
-				\
-				#projection'+projection.id+' table { text-align: left; min-width:100% }\
-				#projection'+projection.id+' table { font-family: Arial, sans-serif; font-size: 11px; border: 1px solid #e7e7e7; }\
-				#projection'+projection.id+' table tr{ height: 16px; line-height: 15px; }\
-				#projection'+projection.id+' table th, \
-				#projection'+projection.id+' table td{ white-space:nowrap; padding: 0px 5px; border-right: 1px solid #e7e7e7; border-bottom: 1px solid #e7e7e7; margin: 0px; }\
-				#projection'+projection.id+' table th:last-child, \
-				#projection'+projection.id+' table td:last-child { border-right: none; }\
-			</style>';
+	html += '<style>'+Items.handies.valuate(this.style, this)+'</style>';
 
 	// -- projection
 
@@ -1000,3 +978,26 @@ Items.projection.prototype.reflect = function(){
 
 	return this;
 }
+
+Items.projection.prototype.style = '\
+				.controls { overflow: hidden; padding:0px; font-size: 12px; font-family: sans-serif; position: relative} \
+				.controls.hover-slide { margin:0px; height:32px; } \
+				.controls.hover-slide:hover { height: auto !important } \
+				.controls h2 { height:30px; padding-left:10px; padding-right:10px; line-height:30px; font-size: 12px; background-color: #c1c1c1; color: white; margin:0px; } \
+				.controls div { display: block; } \
+				.controls .handle { display: inline-block; float: left; width: 25px; text-align:center; } \
+				.controls label { display: block; padding-left:25px; padding-right:10px; line-height:20px; height:20px; border-bottom: 1px dotted white; } \
+				.controls label[checked=checked] input, \
+				.controls label:not([checked=checked]) input { display: none;} \
+				.controls label[checked=checked] { background-color: #e7e7e7 } \
+				.controls label:not([checked=checked]) { background-color: none } \
+				.controls button { display:block; border: none; border-top: 2px solid #e7e7e7; border-bottom: 2px solid #e7e7e7; height: 30px; outline: none; background-color: #f3f3f3; text-align: left; padding-left:25px; width: 100% } \
+				.controls button:hover { background-color: #f9f9f9; } \
+				\
+				#projection{{id}} table { text-align: left; min-width:100% }\
+				#projection{{id}} table { font-family: Arial, sans-serif; font-size: 11px; border: 1px solid #e7e7e7; }\
+				#projection{{id}} table tr{ height: 16px; line-height: 15px; }\
+				#projection{{id}} table th, \
+				#projection{{id}} table td{ white-space:nowrap; padding: 0px 5px; border-right: 1px solid #e7e7e7; border-bottom: 1px solid #e7e7e7; margin: 0px; }\
+				#projection{{id}} table th:last-child, \
+				#projection{{id}} table td:last-child { border-right: none; }';
