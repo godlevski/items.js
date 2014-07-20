@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Items JS</title>
+  <script type="text/javascript" src="items.js"></script>
+</head>
+<body>
+
+	<h1>Items.js</h1>
+
+	<script>
+
+	// -- Setup
+
+	var shelfs = new Items(
+
+			{'Shelf Name': 'Fast -n- free',
+			'Shipping Conditions': 'Items will ship the same day',
+			'Return policy': 'no returns acepted'},
+
+			{'Shelf Name': 'Regular',
+			'Shipping Conditions': 'Items will ship within 2 business days',
+			'Return policy': 'Returns acepted within 30 business days'},
+
+			{'Shelf Name': 'Special order',
+			'Shipping Conditions': 'Items will ship within 2 weeks',
+			'Return policy': 'Returns acepted within 30 business days'}
+
+		),
+
+		categories = {
+			'default': new Items.item({
+				'Category Name': 'Default'
+			}),
+			'regular': new Items.item({
+				'Category Name': 'Regular'
+			}),
+			'asorted': new Items.item({
+				'Category Name': 'MISC'
+			})
+		},
+		
+		inventory = new Items(
+			// typical item number one
+			{
+			'SKU': 'ASDF1',
+			'Name': 'Item Uno', 
+			'Prices': [11.11, 11.12, 11.13],
+			'Specifications': {
+					'Color': 'red',
+					'Weight': 11,
+					'Weight Units': 'lb'
+				},
+			'Shelf': shelfs[0],
+			'Categories': new Items.group(
+					categories.default, 
+					categories.asorted
+				)
+			},
+			// typical item with slightly different specs
+			{
+			'SKU': 'ASDF2',
+			'Name': 'Item Duo', 
+			'Prices': [22.11, 22.12, 22.13],
+			'Specifications': {
+					'Color': 'green',
+					'Weight': 22,
+					'Weight Units': 'lb',
+					'Dimentional Weight': 35
+				},
+			'Shelf': shelfs[2],
+			'Categories': new Items.group(
+					categories.regular,
+					categories.asorted
+				)
+			},
+			// exeptional with slightly different attributes
+			{
+			'Name': 'Somewhat Different Item', 
+			'Specifications': {
+					'Color': 'white',
+				},
+			'Type': 'exception',
+			'Shelf': {
+					'Shelf Name': 'Special shelf for exeptional items'
+				}
+			}
+
+		),
+
+		// html tables of our inventory
+		projections = new Items.collection();
+
+	
+	// -- Indexation and projections
+
+	// log our invetory
+	console.log('my inventory:', inventory);
+
+	// indexate and log new basic index
+	// by default it will indexate first item
+	console.log('basic inventory index:',
+		inventory.indexate().index );
+
+	// make basic projections
+
+	projections.push(
+			new Items.projection(inventory),
+			new Items.projection(shelfs)
+		);
+
+	document.getElementsByTagName('body')[0].innerHTML += 
+		'<h2>Basic Reflections</h2>';
+
+	// create reflections
+	for (var i = 0; i < projections.length; i++) {
+
+		projections[i].reflect();
+
+		document.getElementsByTagName('body')[0].appendChild(
+			projections[i].el
+		)
+	};
+
+
+	// second item has more complete specs set,
+	// so lets use it to create more extended index
+	console.log('more extended inventory index:',
+		
+		inventory.index
+			// extend existing index
+			.merge(
+				// create blank items Object
+				(new Items)
+					// add second inventory item
+					.push(inventory[1])
+					// indexate items
+					.indexate()
+					// pass index back to merge
+					.index
+			)
+	);
+
+	document.getElementsByTagName('body')[0].innerHTML += 
+		'<h2>Extended Reflection</h2>';
+
+	// make another projection
+	projections.push(
+			new Items.projection(inventory)
+		);
+
+	// display it
+	document.getElementsByTagName('body')[0].appendChild(
+			projections[2].el
+		)
+
+	projections[2].reflect();
+
+	// but last item is somewhat special as well, 
+	// so lets set indexation mode to 'extended' 
+	// and reindexate
+	inventory.index.options.extended = true;
+
+	console.log('fully extended inventory index:',
+		
+		inventory
+			.indexate()
+			.index
+	);
+
+	// update previously created projection's index and reflect changes
+	projections[2].index
+		.clear()
+		.merge(inventory.index)
+		.sort();
+
+	projections[2]
+		.reflect();
+
+	// we can also do this:
+
+	inventory.toText();
+
+	// or this
+	
+	inventory.toFile();
+
+	</script>
+
+</body>
+</html>
