@@ -478,9 +478,9 @@ Items.prototype.toText = function(){ // items, options, indexOptions, index
 }
 
 Items.prototype.toFile = function(content){ // items, options, indexOptions, index
-	var filename = typeof arguments[0] == 'string' ? arguments[0] : 'Items-Compilation.csv',
+	var filename = typeof arguments[0] == 'string' ? arguments[0] : 'Items-Compilation.txt',
 		content = content ? content : this.toText.apply(this, arguments),
-		data = 'data:application/csv;charset=utf-8,' + encodeURIComponent(content),
+		data = 'data:text;charset=utf-8,' + encodeURIComponent(content),
 		link = document.createElement('a');
 
 	link.setAttribute('download', filename);
