@@ -68,18 +68,43 @@ Items.handies.extend = function(){
 				arguments[i] instanceof Array){
 			
 			for(var key in arguments[i]){
-				if( !arguments[i].hasOwnProperty(key) ) return;
+				if( !arguments[i].hasOwnProperty(key) ) continue;
 
-				if( Items.handies.isObject(arguments[i][key]) &&
-					deep ){
 
-					target[key] = {};
-					arguments.callee.call(target[key], arguments[i][key]);
+				if( deep &&
+					arguments[i][key] instanceof Items ){
+
+					target[key] = arguments.callee.call(new Items, deep, arguments[i][key]);
 				}
-				else if(arguments[i][key] instanceof Array &&
-						deep){
+				else if( deep &&
+					arguments[i][key] instanceof Items.index ){
 
-					target[key] = arguments.callee.call([], true, arguments[i][key]);
+					target[key] = arguments.callee.call(new Items.index, deep, arguments[i][key]);
+				}
+				else if( deep &&
+					arguments[i][key] instanceof Items.group ){
+
+					target[key] = arguments.callee.call(new Items.group, deep, arguments[i][key]);
+				}
+				else if( deep &&
+					arguments[i][key] instanceof Items.item ){
+
+					target[key] = arguments.callee.call(new Items.item, deep, arguments[i][key]);
+				}
+				else if( deep &&
+					arguments[i][key] instanceof Items.collection ){
+
+					target[key] = arguments.callee.call(new Items.collection, deep, arguments[i][key]);
+				}
+				else if( deep &&
+					Items.handies.isObject(arguments[i][key]) ){
+
+					target[key] = arguments.callee.call({}, deep, arguments[i][key]);
+				}
+				else if(deep &&
+						arguments[i][key] instanceof Array){
+
+					target[key] = arguments.callee.call([], deep, arguments[i][key]);
 				}
 				else {
 					
@@ -350,18 +375,20 @@ Items.prototype.toText = function(){ // items, options, indexOptions, index
 		start: '',
 		rowStart: '',
 		rowEnd: '\n',
-		colStart: '',
-		colEnd: '\t',
+		cellStart: '',
+		cellEnd: '\t',
 		end: '',
 		extendCell: function(cellHtml, ntimes){
 			ntimes = ntimes ? ntimes : 1;
 
 			for (var i = 0; i < ntimes; i++) {
-				cellHtml += this.colStart+this.colEnd;
+				cellHtml += this.cellStart+this.cellEnd;
 			};
 			
 			return cellHtml;
 		},
+		onRow: function(rowHtml, item){return rowHtml},
+		onCell: function(cellHtml, cell){return cellHtml},
 		showHeader: true,
 		showBody: true,
 		appendTitle: '{{name}}'
@@ -403,7 +430,7 @@ Items.prototype.toText = function(){ // items, options, indexOptions, index
 				}
 				else {
 
-					header[l][k] = options.colStart+keyValues[sk]+options.colEnd;
+					header[l][k] = options.cellStart+keyValues[sk]+options.cellEnd;
 
 					// save last assigned position and value
 					header[l].prevPos = k;
@@ -413,7 +440,7 @@ Items.prototype.toText = function(){ // items, options, indexOptions, index
 
 			// fill in left levels with blank cells
 			while (l>-1){
-				header[l][k] = options.colStart+options.colEnd;
+				header[l][k] = options.cellStart+options.cellEnd;
 				// save last assigned position and value
 				header[l].prevPos = k;
 				header[l].prevVal = keyValues[sk];
@@ -423,7 +450,7 @@ Items.prototype.toText = function(){ // items, options, indexOptions, index
 
 		// append title if exist
 		if (title){
-			var cell = options.colStart + title + options.colEnd;
+			var cell = options.cellStart + title + options.cellEnd;
 			
 			// extend cell 'n' times
 			cell = options.extendCell(cell, header[header.length-1].length-1);
@@ -457,17 +484,18 @@ Items.prototype.toText = function(){ // items, options, indexOptions, index
 				};
 
 				if (value === undefined){
-					row += options.colStart+options.colEnd;
+					row += options.onCell( options.cellStart+options.cellEnd, '');
 				}
 				else if (items[i] instanceof Items.group){
 					text += Items.group.toText( options, indexOptions );
 				}
 				else {
-					row += options.colStart+value+options.colEnd;
+					row += options.onCell( options.cellStart+value+options.cellEnd, value );
 				};
 			};
 
 			row += options.rowEnd;
+			row = options.onRow(row, items[i]);
 
 			text += Items.handies.valuate(row, items[i]);
 		};
@@ -477,18 +505,230 @@ Items.prototype.toText = function(){ // items, options, indexOptions, index
 	return text;
 }
 
-Items.prototype.toFile = function(content){ // items, options, indexOptions, index
+Items.prototype.toFile = function(filename, content){ //filename, content, options, indexOptions, index
 	var filename = typeof arguments[0] == 'string' ? arguments[0] : 'Items-Compilation.txt',
-		content = content ? content : this.toText.apply(this, arguments),
-		data = 'data:text;charset=utf-8,' + encodeURIComponent(content),
+		content = 'data:text;charset=utf-8,' + ( content ? content : encodeURIComponent(this.toText.apply(this, arguments)) ),
 		link = document.createElement('a');
 
 	link.setAttribute('download', filename);
-	link.setAttribute('href', data);
+	link.setAttribute('href', content);
 	link.setAttribute('target', '_blank');
 	link.click();
 
 	return this;
+}
+
+Items.prototype.toExcel = function(){
+	var items = this,
+		date = new Date,
+		xml = '<?xml version="1.0"?>\
+		<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\
+			xmlns:o="urn:schemas-microsoft-com:office:office"\
+			xmlns:x="urn:schemas-microsoft-com:office:excel"\
+			xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"\
+			xmlns:html="http://www.w3.org/TR/REC-html40">\
+		\
+		<DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">\
+		<Author>Pricer</Author>\
+		<LastAuthor>Pricer</LastAuthor>\
+		<Created>'+date.getFullYear()+'-'+date.getMonth()+'-'+date.getDate()+'T'+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds()+'Z</Created>\
+		<Version>11.6568</Version>\
+		</DocumentProperties>\
+		<ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">\
+			<WindowHeight>10800</WindowHeight>\
+			<WindowWidth>7635</WindowWidth>\
+			<WindowTopX>360</WindowTopX>\
+			<WindowTopY>150</WindowTopY>\
+			<ProtectStructure>False</ProtectStructure>\
+			<ProtectWindows>False</ProtectWindows>\
+		</ExcelWorkbook>\
+		<Styles>\
+			<Style ss:ID="Default" ss:Name="Normal">\
+				<Alignment ss:Vertical="Bottom"/>\
+				<Borders/>\
+				<Font/>\
+				<Interior/>\
+				<NumberFormat/>\
+				<Protection/>\
+			</Style>\
+			<Style ss:ID="s21">\
+				<Font ss:FontName="Verdana" x:Family="Swiss"/>\
+			</Style>\
+			<Style ss:ID="s22">\
+				<Font ss:FontName="Verdana" x:Family="Swiss" ss:Bold="1"/>\
+			</Style>\
+			<Style ss:ID="s31">\
+				<Font ss:FontName="Verdana" x:Family="Swiss"/>\
+				<Borders>\
+					<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="2"/>\
+				</Borders>\
+			</Style>\
+			<Style ss:ID="s32">\
+				<Font ss:FontName="Verdana" x:Family="Swiss" ss:Bold="1" />\
+				<Borders>\
+					<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="2"/>\
+				</Borders>\
+			</Style>\
+		</Styles>',
+		worksheet = '',
+		table = '', 
+		sample = '';
+
+	if (!items || !items.length) return '';
+
+	table += items.toText({
+			start: '',
+			rowStart: '<Row>',
+			rowEnd: '</Row>\n',
+			cellStart: '<Cell ss:StyleID="s22"><Data ss:Type="String">',
+			cellEnd: '</Data></Cell>',
+			end: '',
+			extendCell: function(cellHtml, ntimes){
+				var ntimes = ntimes ? ntimes : 1,
+					colspan = (cellHtml+'').match(/ss\:MergeAcross\=.([\d]{1,})./i);
+
+				if (colspan && colspan[1]){
+
+					colspan = colspan[1]*1+ntimes;
+					cellHtml = cellHtml.replace( /ss\:MergeAcross\=.([\d]{1,})./gi, 'ss\:MergeAcross="'+colspan+'"' );
+				}
+				else {
+
+					colspan = 0+ntimes;
+					cellHtml = cellHtml.replace( /\<(cell)/gi, '\<$1 ss:MergeAcross="'+colspan+'"' );
+				}
+
+				console.log(cellHtml);
+
+				return cellHtml;
+			},
+			showHeader: true,
+			showBody: false,
+			appendTitle: '{{}}'
+		});
+
+	table += '<Row></Row>';
+
+	table += items.toText({
+			start: '',
+			rowStart: '<Row>',
+			rowEnd: '</Row>\n',
+			cellStart: '',
+			cellEnd: '',
+			end: '',
+			onCell: function(html, value){
+				if (typeof value == 'number'){
+					return '<Cell ss:StyleID="s21"><Data ss:Type="Number">'+value+'</Data></Cell>';
+				}
+				else {
+					return '<Cell ss:StyleID="s21"><Data ss:Type="String">'+value+'</Data></Cell>';
+				}
+			},
+			showHeader: false,
+			showBody: true,
+			appendTitle: '{{}}'
+		});
+
+	// get index sample and find out height in rows
+	sample = items.index.flattenRanges();
+	sample.height = 0;
+	sample.forEach(function(th){
+		var curHeight = th.split('[').length-1;
+
+		if (sample.height<curHeight) sample.height=curHeight;
+	})
+
+	worksheet = '<Worksheet ss:Name="Price Research">';
+
+	worksheet += '<Table ss:ExpandedColumnCount="'+sample.length+'" ss:ExpandedRowCount="'+items.length+100+'" x:FullColumns="'+1+'" x:FullRows="'+1+'" ss:StyleID="s21">';
+
+	worksheet += table;
+
+	worksheet += '</Table>';
+
+	worksheet += '<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">\
+			<Print>\
+				<ValidPrinterInfo/>\
+				<VerticalResolution>0</VerticalResolution>\
+			</Print>\
+			<Selected/>\
+			<FreezePanes/>\
+			<FrozenNoSplit/>\
+			<SplitHorizontal>'+sample.height+'</SplitHorizontal>\
+			<TopRowBottomPane>'+sample.height+'</TopRowBottomPane>\
+			<ActivePane>2</ActivePane>\
+			<Panes>\
+				<Pane>\
+					<Number>3</Number>\
+					<ActiveRow>1</ActiveRow>\
+					<ActiveCol>1</ActiveCol>\
+					<RangeSelection>R2C2:R2C4</RangeSelection>\
+				</Pane>\
+			</Panes>\
+			<ProtectObjects>False</ProtectObjects>\
+			<ProtectScenarios>False</ProtectScenarios>\
+		</WorksheetOptions>';
+
+	worksheet += '</Worksheet>';
+
+	xml += worksheet;
+	xml += '</Workbook>';
+
+	return xml;
+}
+
+Items.prototype.toExcelFile = function(filename, content){ //filename, content, options, indexOptions, index
+	var filename = typeof arguments[0] == 'string' ? arguments[0] : 'Items-Compilation.xml',
+		content = 'data:application/xml;charset=utf-8,' + encodeURIComponent(content ? content : this.toExcel.apply(this, arguments)),
+		link = document.createElement('a');
+
+	link.setAttribute('download', filename);
+	link.setAttribute('href', content);
+	link.setAttribute('target', '_blank');
+	link.click();
+
+	return this;
+}
+
+
+
+Items.prototype.everyItem = function(){ // deep, fn
+	var fn, deep = false;
+
+	for (var i = 0; i < arguments.length; i++) {
+		if (typeof arguments[i] == 'boolean'){
+			deep = arguments[i];
+		}
+		else if(typeof arguments[i] == 'function'){
+			fn = arguments[i];
+		}
+	};
+
+	if (!fn) return;
+
+	this.forEach(function(th, i, items){
+		if (deep &&
+			th instanceof Items.item){
+
+			for (key in th){
+				if (th[key] instanceof Items.item){
+
+					fn.call(th[key], th[key], key, th);
+				}
+			}
+		}
+		else if (deep &&
+				(th instanceof Items ||
+				 th instanceof Items.group)){
+
+			th.everyItem(deep, fn);
+		}
+		else if (th instanceof Items.item){
+
+			fn.call(th, th, i, items);
+		}
+		
+	})
 }
 
 // - Items Types
@@ -807,26 +1047,42 @@ Items.projection.prototype.update = function(){ // items, index, index.options
 	return this;
 }
 
+Items.projection.prototype.clear = function(){
+	delete this.items;
+	delete this.index;
+	delete this.indexOptions;
+	delete this.fullIndex;
+	
+	this.el.innerHTML = '';
+
+	return this;
+}
+
 Items.projection.prototype.reflectItem = function(item){
 	var projection = this;
 
 	if (item instanceof Items.item){
+		var itemRow = projection.el.getElementsByClassName('id'+item.id)[0];
 
-		projection.el.getElementsByClassName('id'+item.id)[0].innerHTML = (new Items(item)).toText({
-			start: '',
-			rowStart: '<tr class="id{{id}}">',
-			rowEnd: '</tr>',
-			colStart: '<td>',
-			colEnd: '</td>',
-			end: '',
-			showHeader: false,
-			showBody: true
-		}, this.index );
+		if (itemRow){
+			itemRow.innerHTML = (new Items(item)).toText({
+				start: '',
+				rowStart: '<tr class="id{{id}}">',
+				rowEnd: '</tr>',
+				cellStart: '<td>',
+				cellEnd: '</td>',
+				end: '',
+				showHeader: false,
+				showBody: true
+			}, this.index );	
+		}
 
 	}
 
 	return this;
 }
+
+Items.projection.onUpdate = [];
 
 Items.projection.prototype.reflect = function(){
 	var projection = this,
@@ -877,57 +1133,59 @@ Items.projection.prototype.reflect = function(){
 
 	html += '<style>'+Items.handies.valuate(this.style, this)+'</style>';
 
-	// -- projection
 
-	html += '<table cellspacing="0px">';
+	if (projection.items instanceof Items){
 
-	// create header
+		// -- projection
 
-	html += projection.items.toText({
-		start: '',
-		rowStart: '<tr>',
-		rowEnd: '</tr>',
-		colStart: '<th>',
-		colEnd: '</th>',
-		end: '',
-		extendCell: function(cellHtml, ntimes){
-			var ntimes = ntimes ? ntimes : 1,
-				colspan = (cellHtml+'').match(/colspan\=.([\d]{1,})./i);
+		html += '<table cellspacing="0px">';
 
+		// create header
 
+		html += projection.items.toText({
+			start: '',
+			rowStart: '<tr>',
+			rowEnd: '</tr>',
+			cellStart: '<th>',
+			cellEnd: '</th>',
+			end: '',
+			extendCell: function(cellHtml, ntimes){
+				var ntimes = ntimes ? ntimes : 1,
+					colspan = (cellHtml+'').match(/colspan\=.([\d]{1,})./i);
 
-			if (colspan && colspan[1]){
+				if (colspan && colspan[1]){
 
-				colspan = colspan[1]*1+ntimes;
-				cellHtml = cellHtml.replace( /colspan\=.([\d]{1,})./gi, 'colspan="'+colspan+'"' );
-			}
-			else {
+					colspan = colspan[1]*1+ntimes;
+					cellHtml = cellHtml.replace( /colspan\=.([\d]{1,})./gi, 'colspan="'+colspan+'"' );
+				}
+				else {
 
-				colspan = 1+ntimes;
-				cellHtml = cellHtml.replace( /\<(tr|th)/g, '\<$1 colspan="'+colspan+'"' );
-			}
+					colspan = 1+ntimes;
+					cellHtml = cellHtml.replace( /\<(tr|th)/g, '\<$1 colspan="'+colspan+'"' );
+				}
 
+				return cellHtml;
+			},
+			showHeader: true,
+			showBody: false
+		}, projection.index );
 
-			return cellHtml;
-		},
-		showHeader: true,
-		showBody: false
-	}, projection.index );
+		// create body
 
-	// create body
+		html += projection.items.toText({
+			start: '',
+			rowStart: '<tr id="{{id}}" class="id{{id}}">',
+			rowEnd: '</tr>',
+			cellStart: '<td>',
+			cellEnd: '</td>',
+			end: '',
+			showHeader: false,
+			showBody: true
+		}, projection.index );
 
-	html += projection.items.toText({
-		start: '',
-		rowStart: '<tr id="{{id}}" class="id{{id}}">',
-		rowEnd: '</tr>',
-		colStart: '<td>',
-		colEnd: '</td>',
-		end: '',
-		showHeader: false,
-		showBody: true
-	}, projection.index );
-
-	html += '</ table>';
+		html += '</ table>';
+	}
+	
 
 	// apply html to element
 
@@ -973,7 +1231,11 @@ Items.projection.prototype.reflect = function(){
 	// trigger on update
 
 	for (var i = 0; i < projection.onUpdate.length; i++) {
-		if (typeof projection.onUpdate[i] == 'function') projection.onUpdate[i]();
+		if (typeof projection.onUpdate[i] == 'function') projection.onUpdate[i](this);
+	};
+
+	for (var i = 0; i < Items.projection.onUpdate.length; i++) {
+		if (typeof projection.onUpdate[i] == 'function') projection.onUpdate[i](this);
 	};
 
 	return this;
